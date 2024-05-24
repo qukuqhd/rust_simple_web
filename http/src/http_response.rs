@@ -124,7 +124,7 @@ mod tests {
         assert_eq!(res, res_expected);
     }
     #[test]
-    fn test_http_response_creation(){
+    fn test_http_response_creation() {
         let res_expected = HttpResponse {
             version: "HTTP/1.1",
             status_code: "404",
@@ -136,7 +136,7 @@ mod tests {
             },
             body: Some("xxxx".into()),
         };
-        let res_str:String = res_expected.into();
-        println!("{}",res_str);
+        let res_str: String = res_expected.into();
+        println!("{}", res_str);
     }
 }
