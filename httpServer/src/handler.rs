@@ -4,16 +4,15 @@ use http::{
 };
 use serde::{Deserialize, Serialize};
 use std::{collections::HashMap, env, fs};
-
+fn load_file(file_name: &str) -> Option<String> {
+    let default_path: String = format!("{}/public", env!("CARGO_MANIFEST_DIR"));
+    let public_path = env::var("PUBLIC_PATH").unwrap_or(default_path);
+    let full_path: String = format!("{}/{}", public_path, file_name);
+    let contents = fs::read_to_string(full_path);
+    contents.ok()
+}
 pub trait Handler {
     fn handle(req: &HttpRequest) -> HttpResponse;
-    fn load_file(file_name: &str) -> Option<String> {
-        let default_path = format!("{}/public", env!("CARGO_MANIFEST_DIR"));
-        let public_path = env::var("PUBLIC_PATH").unwrap_or(default_path);
-        let full_path = format!("{}/{}", public_path, file_name);
-        let contents = fs::read_to_string(full_path);
-        contents.ok()
-    }
 }
 pub struct WebServiceHandler;
 pub struct StaticPageHandler;
@@ -26,7 +25,7 @@ pub struct OrderStatus {
 }
 impl Handler for PageNotFoundHandler {
     fn handle(_req: &HttpRequest) -> HttpResponse {
-        HttpResponse::new("404", None, Self::load_file("404.html"))
+        HttpResponse::new("404", None, load_file("404.html"))
     }
 }
 impl Handler for StaticPageHandler {
@@ -34,9 +33,9 @@ impl Handler for StaticPageHandler {
         let http::http_request::Resource::Path(s) = &req.resource;
         let route: Vec<_> = s.split("/").collect();
         match route[1] {
-            "" => HttpResponse::new("200", None, Self::load_file("index.html")),
-            "health" => HttpResponse::new("200", None, Self::load_file("health.html")),
-            path => match Self::load_file(path) {
+            "" => HttpResponse::new("200", None, load_file("index.html")),
+            "health" => HttpResponse::new("200", None, load_file("health.html")),
+            path => match load_file(path) {
                 Some(content) => {
                     let mut map = HashMap::new();
                     if path.ends_with(".css") {

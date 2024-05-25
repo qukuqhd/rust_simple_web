@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Clone, Copy,PartialEq,Eq,Hash)]
 pub enum Method {
     GET,
     POST,
@@ -46,7 +46,7 @@ fn process_req_line(s: &str) -> (Method, Resource, Version) {
     let mut words = s.split_whitespace();
     let method = words.next().unwrap();
     let resource = words.next().unwrap();
-    let version = words.next().unwrap();
+    let version: &str = words.next().unwrap();
     (
         Method::from(method),
         Resource::Path(resource.to_string()),
