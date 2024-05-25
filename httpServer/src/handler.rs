@@ -25,7 +25,7 @@ pub struct OrderStatus {
     order_date: String,
 }
 impl Handler for PageNotFoundHandler {
-    fn handle(req: &HttpRequest) -> HttpResponse {
+    fn handle(_req: &HttpRequest) -> HttpResponse {
         HttpResponse::new("404", None, Self::load_file("404.html"))
     }
 }
