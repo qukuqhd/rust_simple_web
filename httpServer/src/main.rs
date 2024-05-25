@@ -1,4 +1,3 @@
-use handler::Handler;
 use server::Server;
 
 pub mod handler;

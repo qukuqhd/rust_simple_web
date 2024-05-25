@@ -1,8 +1,8 @@
-use std::{borrow::BorrowMut, cell::RefCell, collections::HashMap, io::Write};
+use std::{ cell::RefCell, collections::HashMap, io::Write};
 
 use http::{http_request::{HttpRequest, Method, Resource}, http_response::HttpResponse};
 
-use crate::handler::{Handler, PageNotFoundHandler, StaticPageHandler, WebServiceHandler};
+use crate::handler::{Handler, PageNotFoundHandler};
 struct HandlerMap(HashMap<String, fn(&HttpRequest) -> HttpResponse>);
 impl HandlerMap{
     pub fn new()->Self{
