@@ -1,8 +1,6 @@
 use std::{
-    borrow::Borrow,
     cell::RefCell,
-    collections::HashMap,
-    io::{self, Write},
+    collections::HashMap, io::Write,
 };
 
 use http::{
@@ -134,11 +132,11 @@ impl RouterMap {
             },
         }
     }
-    pub fn handle_req<T: io::Write>(&self, req: &HttpRequest, stream: &mut T) {
+    pub fn handle_req<T: Write>(&self, req: &HttpRequest, stream: &mut T) {
         let info: String;
         let Resource::Path(path) = &req.resource;
         info = self.execute_handler(req, path.clone()).into();
 
-        stream.write(info.as_bytes());
+        stream.write(info.as_bytes()).unwrap();
     }
 }
