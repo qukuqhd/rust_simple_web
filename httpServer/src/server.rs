@@ -45,7 +45,7 @@ impl<'a> Server<'a> {
         self.router.borrow_mut().post(format!("{}{}",self.pre_path,path), handler_func)
     }
     //创建路由分组
-    pub fn create_group(self,child_path:String)->ServerGroup<'a>{
+    pub fn create_group(&self,child_path:String)->ServerGroup<'a>{
         ServerGroup{
             socket_addr:&self.socket_addr,
             router:self.router.clone(),
