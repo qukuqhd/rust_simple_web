@@ -30,7 +30,8 @@ impl RouteTree {
         handler_func: fn(&http::http_request::HttpRequest) -> HttpResponse,
     ) {
         let mut current_node = self;
-        if path == "" || path == "/" {//特殊情况的匹配对根节点进行处理
+        if path == "" || path == "/" {
+            //特殊情况的匹配对根节点进行处理
             match current_node.handler_func {
                 None => {
                     current_node.handler_func = Some(handler_func);
@@ -44,9 +45,11 @@ impl RouteTree {
                 0 | 1 => {
                     return;
                 }
-                _ => {//如果是是一个合理的路由
+                _ => {
+                    //如果是是一个合理的路由
                     let mut last_match = 0;
-                    for letter_counter in 1..path_list.len() {//先往下探测以及有的路由
+                    for letter_counter in 1..path_list.len() {
+                        //先往下探测以及有的路由
                         if current_node
                             .children
                             .contains_key(path_list[letter_counter])
@@ -61,18 +64,19 @@ impl RouteTree {
                         }
                         last_match = letter_counter + 1;
                     }
-                    if last_match == path_list.len() {//判断是否到达目的的路由
+                    if last_match == path_list.len() {
+                        //判断是否到达目的的路由
                         match current_node.handler_func {
                             None => current_node.handler_func = Some(handler_func),
                             _ => panic!("repeat regis"),
                         }
-                    } else {//否则再往下创建新的节点
+                    } else {
+                        //否则再往下创建新的节点
                         for new_counter in last_match..path_list.len() {
-                            current_node.children.insert(
-                                (path_list[new_counter]).to_string(),
-                                RouteTree::new(),
-                            );
-                            current_node= current_node
+                            current_node
+                                .children
+                                .insert((path_list[new_counter]).to_string(), RouteTree::new());
+                            current_node = current_node
                                 .children
                                 .get_mut(path_list[new_counter])
                                 .unwrap();
@@ -91,22 +95,26 @@ impl RouteTree {
         &self,
         path: String,
     ) -> Option<fn(&http::http_request::HttpRequest) -> HttpResponse> {
-        if path==""||path=="/"{//特殊字符串获取根的路由
+        if path == "" || path == "/" {
+            //特殊字符串获取根的路由
             self.handler_func
-        }else {
-            let path_list :Vec<_> = path.split("/").collect();
+        } else {
+            let path_list: Vec<_> = path.split("/").collect();
             match path_list.len() {
-                0|1=>return None,//不是合理的路由匹配字符串
-                _=>{//合理的路由匹配字符串
+                0 | 1 => return None, //不是合理的路由匹配字符串
+                _ => {
+                    //合理的路由匹配字符串
                     let mut current_node = self;
-                    for index in 1..path_list.len(){//往下寻找
-                        if current_node.children.contains_key(path_list[index]){
+                    for index in 1..path_list.len() {
+                        //往下寻找
+                        if current_node.children.contains_key(path_list[index]) {
                             current_node = current_node.children.get(path_list[index]).unwrap();
-                        }else {//没有了就返回node
+                        } else {
+                            //没有了就返回node
                             return None;
                         }
                     }
-                    return current_node.handler_func;//找到节点返回
+                    return current_node.handler_func; //找到节点返回
                 }
             }
         }
@@ -162,10 +170,12 @@ impl RouterMap {
             },
         }
     }
-    pub fn handle_req<T: Write>(&self, pre_path:&str,req: &HttpRequest, stream: &mut T) {
+    pub fn handle_req<T: Write>(&self, pre_path: &str, req: &HttpRequest, stream: &mut T) {
         let info: String;
         let Resource::Path(path) = &req.resource;
-        info = self.execute_handler(req, format!("{}{}",pre_path,path.clone())).into();
+        info = self
+            .execute_handler(req, format!("{}{}", pre_path, path.clone()))
+            .into();
 
         stream.write(info.as_bytes()).unwrap();
     }
