@@ -1,7 +1,4 @@
-use std::{
-    cell::RefCell,
-    collections::HashMap, io::Write,
-};
+use std::{cell::RefCell, collections::HashMap, io::Write};
 
 use http::{
     http_request::{HttpRequest, Method, Resource},
@@ -13,76 +10,109 @@ use crate::handler::{Handler, PageNotFoundHandler};
 //路由树
 #[derive(Clone)]
 struct RouteTree {
-    path: String, //当前的路径部分
     handler_func: Option<fn(&http::http_request::HttpRequest) -> HttpResponse>, //节点对应的请求处理函数
-    children: Vec<RefCell<RouteTree>>,                                          //子树
+    children: HashMap<String, RouteTree>,                                       //子树
 }
 impl RouteTree {
-    pub fn new(path: String) -> Self {
+    pub fn new() -> Self {
         Self {
-            path: path,
             handler_func: None,
-            children: Vec::new(),
+            children: HashMap::new(),
         }
     }
     pub fn root() -> Self {
-        Self::new("/".to_string())
+        Self::new()
     }
+    //路由注册
     fn regis_route(
-        &self,
+        &mut self,
         path: String,
         handler_func: fn(&http::http_request::HttpRequest) -> HttpResponse,
     ) {
-        let mut path_vec: Vec<_> = path.split("/").collect();
-        dfs_regis(&RefCell::new((*self).clone()), &mut path_vec, handler_func);
+        let mut current_node = self;
+        if path == "" || path == "/" {//特殊情况的匹配对根节点进行处理
+            match current_node.handler_func {
+                None => {
+                    current_node.handler_func = Some(handler_func);
+                }
+                _ => panic!("repeat regis"),
+            }
+            return;
+        } else {
+            let path_list: Vec<_> = path.split("/").collect();
+            match path_list.len() {
+                0 | 1 => {
+                    return;
+                }
+                _ => {//如果是是一个合理的路由
+                    let mut last_match = 0;
+                    for letter_counter in 1..path_list.len() {//先往下探测以及有的路由
+                        if current_node
+                            .children
+                            .contains_key(path_list[letter_counter])
+                        {
+                            current_node = current_node
+                                .children
+                                .get_mut(path_list[letter_counter])
+                                .unwrap();
+                        } else {
+                            last_match = letter_counter;
+                            break;
+                        }
+                        last_match = letter_counter + 1;
+                    }
+                    if last_match == path_list.len() {//判断是否到达目的的路由
+                        match current_node.handler_func {
+                            None => current_node.handler_func = Some(handler_func),
+                            _ => panic!("repeat regis"),
+                        }
+                    } else {//否则再往下创建新的节点
+                        for new_counter in last_match..path_list.len() {
+                            current_node.children.insert(
+                                (path_list[new_counter]).to_string(),
+                                RouteTree::new(),
+                            );
+                            current_node= current_node
+                                .children
+                                .get_mut(path_list[new_counter])
+                                .unwrap();
+                        }
+                        match current_node.handler_func {
+                            None => current_node.handler_func = Some(handler_func),
+                            _ => panic!("repeat regis"),
+                        }
+                    }
+                }
+            }
+        }
     }
+    //查询路由
     fn find_handler(
         &self,
         path: String,
     ) -> Option<fn(&http::http_request::HttpRequest) -> HttpResponse> {
-        let mut path_vev: Vec<_> = path.split("/").collect();
-        match dfs_find(&self, &mut path_vev) {
-            None => None,
-            Some(ref node) => node.handler_func,
+        if path==""||path=="/"{//特殊字符串获取根的路由
+            self.handler_func
+        }else {
+            let path_list :Vec<_> = path.split("/").collect();
+            match path_list.len() {
+                0|1=>return None,//不是合理的路由匹配字符串
+                _=>{//合理的路由匹配字符串
+                    let mut current_node = self;
+                    for index in 1..path_list.len(){//往下寻找
+                        if current_node.children.contains_key(path_list[index]){
+                            current_node = current_node.children.get(path_list[index]).unwrap();
+                        }else {//没有了就返回node
+                            return None;
+                        }
+                    }
+                    return current_node.handler_func;//找到节点返回
+                }
+            }
         }
     }
 }
 
-fn dfs_regis(
-    node: &RefCell<RouteTree>,
-    path_vec: &mut Vec<&str>,
-    handler_func: fn(&http::http_request::HttpRequest) -> HttpResponse,
-) {
-    if path_vec.len() == 0 {
-        //抵达了要添加节点的层次，并且没有路径冲突
-        if node.borrow().handler_func == None {
-            node.borrow_mut().handler_func = Some(handler_func);
-        }
-    } else {
-        for child in node.borrow().children.iter() {
-            if child.borrow().path == path_vec[0] {
-                path_vec.remove(0);
-                dfs_regis(&child, path_vec, handler_func);
-            }
-        }
-        let child = RefCell::new(RouteTree::new(path_vec[0].into()));
-        path_vec.remove(0);
-        dfs_regis(&child, path_vec, handler_func);
-        node.borrow_mut().children.push(child);
-    }
-}
-fn dfs_find<'a>(node: &'a RouteTree, path_vec: &'a mut Vec<&'a str>) -> Option<&'a RouteTree> {
-    if path_vec.len() == 0 {
-        Some(node)
-    } else {
-        for child in node.children.iter() {
-            if child.borrow().path == path_vec[0] {
-                dfs_find(node, &mut path_vec.clone());
-            }
-        }
-        None
-    }
-}
 pub struct RouterMap {
     tree_map: HashMap<Method, RefCell<RouteTree>>,
 }
@@ -100,7 +130,7 @@ impl RouterMap {
     ) {
         match self.tree_map.get(&method) {
             None => {
-                let new_tree = RouteTree::root();
+                let mut new_tree = RouteTree::root();
                 new_tree.regis_route(path, handler_func);
                 self.tree_map.insert(method, RefCell::new(new_tree));
             }
