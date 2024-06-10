@@ -162,10 +162,10 @@ impl RouterMap {
             },
         }
     }
-    pub fn handle_req<T: Write>(&self, req: &HttpRequest, stream: &mut T) {
+    pub fn handle_req<T: Write>(&self, pre_path:&str,req: &HttpRequest, stream: &mut T) {
         let info: String;
         let Resource::Path(path) = &req.resource;
-        info = self.execute_handler(req, path.clone()).into();
+        info = self.execute_handler(req, format!("{}{}",pre_path,path.clone())).into();
 
         stream.write(info.as_bytes()).unwrap();
     }
